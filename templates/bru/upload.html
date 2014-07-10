@@ -1,0 +1,7 @@
+{% extends "bru/mainpage.html" %}
+{% block main %}
+<form action='{% url "bru_uploadimage" %}' method='post' enctype="multipart/form-data">
+{{ form.as_p }}
+<input type='submit' value='feltolt'/>
+</form>
+{% endblock %}

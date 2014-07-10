@@ -1,0 +1,7 @@
+{% extends "bru/mainpage.html" %}
+{% block main %}
+<form action="/bru/edittag/{{ tag.text }}/" method="post">
+{{ form.as_p }}
+<input type="submit" value="edit">
+</form>
+{% endblock %}

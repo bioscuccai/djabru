@@ -1,0 +1,145 @@
+{% extends "bru/mainpage.html" %}
+{% block head %}
+<style>
+.removetag{
+	color: red;
+}
+</style>
+{% endblock %}
+{% block main %}
+
+	<img src="/static/upl/{{pic.pk}}{{pic.filetype}}"><br>
+	<div id="commentlist">
+		{% for c in comments %}
+		<div class="block">
+			<p class="blockheader"><span style="font-weight: bold">{{c.user.username}}</span> / {{c.added}}</p>
+			<p>{{c.text}}</p>
+		</div>
+		{% endfor %}
+	</div>
+	{% if user.is_authenticated %}
+		<form method="post" action="{% url 'bru_addcomment' pic.pk %}" id="addcommentform">
+			{{ form.as_p }}
+			<input type="submit" value="comment">
+		</form>
+	{% endif %}
+
+{% endblock %}
+
+{% block side %}
+	<div id="picinfoblock" class="block">
+	<dl>
+		<p class="blockheader">Info</p>
+		<dt>id:</dt><dd>{{ pic.pk }}</dd>
+		<dt>name:</dt><dd>{{ pic.filename }}</dd>
+		<dt>origin:</dt><dd>{{ pic.origin }}</dd>
+		<dt>filename:</dt><dd>{{pic.filecount}}</dd>
+		<dt>uploaded by:</dt><dd>{{pic.user.username}}</dd>
+	</dl>
+	</div>
+	<div id="tagblock" class="block">
+	<p class="blockheader">Tags</p>
+		<div id="taglist">
+			{% for t in tags %}
+				<p><a href="{% url 'bru_bytag' t 1 %}" style="color: {{t.color}}">{{t}}</a> ( <a href="{% url 'bru_removetag' pic.pk t %}" class="removetag" name="removelink_{{ t }}">-</a> )</p>
+			{% endfor %}
+		</div>
+	</div>
+	<div id="addtagblock" class="block">
+		<p class="blockheader">uj tag</p>
+		<form action="{% url 'bru_addtag' pic.pk %}" method="post"  id="addtagform">
+			{% csrf_token %}
+			{{ tagform.text }}<br>
+			<input type="submit" value="uj tag" id="addtagbutton">
+		</form>
+	</div>
+	<div id="tart"></div>
+{% endblock %}
+
+{% block js %}
+	<script src="/static/mustache.js"></script>
+	{% verbatim %}
+	<script id="tmpl_tag" type="text/template">
+		<a href="{%endverbatim%}{% url 'bru_bytag' "IDETEDD" 1%}{%verbatim%}">{{fields.text}}</a> ( <a href="{% endverbatim %}{% url 'bru_removetag' pic.pk 'IDETEDD'%}{% verbatim %}" class="removetag" id="removelink_{{ t }}">-</a> )<br>
+	</script>
+	<script id="tmpl_comment" type="text/template">
+		<div class="block">
+			<p class="blockheader"><span style="font-weight: bold">{{username}}</span> / {{added}}</p>
+			<p>{{text}}</p>
+		</div>
+	</script>
+	{% endverbatim %}
+	<script>
+	function rereadTags(){
+		var oldTemp=$("#tmpl_tag").html();
+		var newTemp=oldTemp.replace(/IDETEDD/g, "\{\{fields.text\}\}")
+		$("#tmpl_tag").html(newTemp);
+
+		$("#taglist").html("");
+		$.getJSON("{% url 'bru_ajax_tags' pic.pk %}", function(obj){
+			var tl="";
+			$.each(obj,
+				function(index, data){
+					//var ht=$("#taglist").html();
+					var template=$("#tmpl_tag").html();
+					var t=Mustache.to_html(template, data);
+					tl+=t
+					//$("#taglist").html(ht+t);
+				}
+			);
+			$("#taglist").html(tl);
+		});
+	}
+
+
+	function rereadComments(){
+		$("#commentlist").html("");
+		var users=Array();
+		var template=$("#tmpl_comment").html();
+		$.getJSON("{% url 'bru_ajax_comments' pic.pk %}", function(obj){
+			$.each(obj.users,
+				function(index, data){
+					users[data.pk]=data.fields.username;
+				}
+			);
+			$.each(obj.comments,
+				function(index, data){
+					var pc=$("#commentlist").html();
+					var comment={
+						text: data.fields.text,
+						username: users[data.fields.user],
+						added: data.fields.added
+					};
+					var t=Mustache.to_html(template, comment);
+					$("#commentlist").html(pc+t);
+				}
+			);
+		});
+	}
+	$("#addtagform").submit(function(e){
+		$.post("{% url 'bru_addtag' pic.pk %}", $("#addtagform").serialize(), function(result){});
+		$("#addtagform")[0].reset();
+		rereadTags();
+		return false;
+	});
+
+	$("#addcommentform").submit(function(e){
+		$.post("{% url 'bru_addcomment' pic.pk %}", $("#addcommentform").serialize(), function(result){});
+		$("#addcommentform")[0].reset();
+		rereadComments();
+		return false;
+	});
+
+	$(".removetag").click(function(e){
+		e.preventDefault();
+		var tag=this.id;
+		var removeaddr="{% url 'bru_removetag' pic.pk 'EZTCSERELD_' %}";
+		tag=tag.replace("removelink_", "");
+		removeaddr=removeaddr.replace("EZTCSERELD_", tag);
+		$.get(removeaddr, function(result){});
+		rereadTags();
+		return false;
+	});
+	</script>
+{% endblock %}
+

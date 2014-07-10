@@ -1,0 +1,155 @@
+{% extends "bru/mainpage.html" %}
+{% load staticfiles %}
+{% block head %}
+<style>
+.paginatorlink{}
+.edittaglink{}
+.edittagform{}
+.editnonjslink{}
+.imgbox{
+	width: {{tw}}px;
+	border-style: solid;
+	border-width: 2px;
+	float: left;
+	display:inline-block;
+	text-align: center;
+	margin: 5px 5px 5px 5px;
+}
+.currpagelink{
+	font-weight: bold;
+}
+#gal{
+	float:none;
+	display:block;
+}
+</style>
+{% endblock %}
+{% block main %}
+	{% for tagform in tagforms %}
+		<fieldset id="tagfieldset_{{tagform.instance.text}}"><legend id="tagcolor_{{tagform.instance.text}}" style="color: {{ tagform.instance.color }}">{{ tagform.instance.text }}</legend>
+		<div id="tagdiv_{{tagform.instance.text}}">
+			<div id="taginfo_{{tagform.instance.text}}">
+				Description: {{ tagform.instance.description }}<br>
+				URL: <a href="{{ tagform.instance.url }}">{{ tag.url }}</a><br>
+			</div>
+			{% if user.is_authenticated %}
+			<a href="{% url 'bru_edittag' tagform.instance.text %}" class="editnonjslink">edit</a>
+			<a href="#" class="edittaglink linkbutton" id="taglink_{{tagform.instance.text}}" style="display:none">edit</a>
+			{% endif %}
+		</div>
+		{% if user.is_authenticated %}
+		<form action="{% url 'bru_edittag' tagform.instance.text %}" method="post" id="tagform_{{ tagform.instance.text }}" style="display:none" class="edittagform">
+		{{ tagform.as_p }}
+		<input type="submit" value="modosit"/>
+		</form>
+		{% endif %}
+		</fieldset>
+	{% endfor %}
+	<div id="gal">
+	{% for pic in pictures %}
+		<span class="imgbox">
+			<img src="/static/thumb/{{pic.pk}}{{pic.filetype}}"><br>
+			<a href="{% url 'bru_viewimage' pic.pk %}">{{ pic.filename }}</a>
+		</span>
+	{% endfor %}
+	</div>
+	<hr style="clear:both">
+	<ul id="paginator" class="pagination">
+	{% for i in pagerange %}
+		<li class="{% if currpage == i %}active{% endif %} "><a href="{% url 'bru_bytag' currtag i %}" class="paginatorlink">{{i}}</a></li>
+	{% endfor %}
+	</ul>
+{% endblock %}
+{% block side %}
+	<div id="reltags" class="block">
+		<p class="blockheader">Related tags</p>
+		{% for reltag in reltags %}
+			{% if reltag.text != "" %}
+				<p><a href="{% url 'bru_bytag' reltag.text 1 %}" style="color: {{reltag.color}}">{{reltag.text}} ({{reltag.links}})</a></p>
+			{% endif %}
+		{% endfor %}
+	</div>
+{% endblock %}
+{% block js %}
+	<script src="/static/mustache.js"></script>
+	<script type="text/template" id="tmpl_img">
+		{% verbatim %}
+		<span class="imgbox">
+			<img src="/static/thumb/{{pk}}{{fields.filetype}}"><br>
+			<a href="{% endverbatim %}{% url 'bru_viewimage' 999 %}{% verbatim %}">{{ fields.filename }}</a>
+		</span>
+		{% endverbatim %}
+
+	</script>
+	<script type="text/template" id="tmpl_sttag">
+		{% verbatim %}
+		Description: {{ fields.description }}<br>
+		URL: <a href="{{ fields.url }}">{{ fields.url }}</a><br>
+		{% endverbatim %}
+	</script>
+	<script>
+	$(".paginatorlink").click(function(e){
+		e.preventDefault();
+		var tableCont="";
+		var url="{% url 'bru_ajax_bytag' 'DUMMY' 999 %}";
+		url=url.replace(/DUMMY/g, "{{tagstring}}").replace(/999/g, $(this).text());
+		$("#tmpl_img").html($("#tmpl_img").html().replace(/999/g,"\{\{pk\}\}"));
+		$.getJSON(url, function(data){
+			$("#gal").html("");
+			$.each(data, function(index,data){
+				tableCont+=Mustache.to_html($("#tmpl_img").html(), data);
+			});
+			$("#gal").html(tableCont);
+			//$(".imgbox").equalHeights();
+			$("span img").load(function(e){
+				$(".imgbox").equalHeights();
+			});
+		});
+		$("#paginator li").removeClass("active");
+		$(this).parent().addClass("active");
+		//$(".imgbox").equalHeights();
+		
+	});
+
+
+	{% if user.is_authenticated %}
+	function reloadStaticTag(tagname){
+		var url="{% url 'bru_ajax_tag' 'DUMMY' %}";
+		url=url.replace(/DUMMY/g, tagname);
+		$.getJSON(url, function(data){
+			var model=data[0];
+			var desc=Mustache.to_html($("#tmpl_sttag").html(), model);
+			$("#taginfo_"+tagname).html(desc);
+			$("#tagcolor_"+tagname).css("color", model.fields.color);
+		});
+	}
+
+	$(".edittaglink").click(function(e){
+		e.preventDefault();
+		var selTag=this.id.replace("taglink_", "");
+		$("#tagdiv_"+selTag).hide();
+		$("#tagform_"+selTag).show();
+		reloadStaticTag(selTag);
+		return false;
+	});
+
+	$(".edittagform").submit(function(e){
+		var selTag=this.id.replace("tagform_","");
+		var url="{% url 'bru_edittag' 'DUMMY' %}";
+		url=url.replace(/DUMMY/g, selTag);
+		$.post(url, $("#tagform_"+selTag).serialize(), function(result){});
+		reloadStaticTag(selTag);
+		$("#tagform_"+selTag).hide();
+		$("#tagdiv_"+selTag).show();
+		return false;
+	});
+	$(".editnonjslink").hide();
+	$(".edittaglink").show();
+	//$(".imgbox").equalHeights();
+	$("span img").load(function(e){
+		$(".imgbox").equalHeights();
+	});
+	{% endif %}
+
+	</script>
+{% endblock %}
