@@ -113,18 +113,28 @@ def bytag(request):
 
 def getpagesandtags(tags):
 	tagobs=[]
+	notin=[]
+	pictures=Picture.objects.all()
 	if tags!="" and tags!=" ":
 		tagarr=tags.split()
 		for tagname in tagarr:
+			toexclude=False
+			if tagname.startswith("-"):
+				if len(tagname)==1:
+					continue
+				tagname=tagname[1:len(tagname)]
+				toexclude=True
 			try:
 				tag=PicTag.objects.get(text=tagname)
 			except PicTag.DoesNotExist:
 				continue
-			tagobs.append(tag)
-		pictures=Picture.objects.filter(tags__in=tagobs)
-	else:
-		pictures=Picture.objects.all()
-
+			if toexclude:
+				notin.append(tag)
+			else:
+				tagobs.append(tag)
+		if tagobs:
+			pictures=pictures.filter(tags__in=tagobs)
+	pictures=pictures.exclude(tags__in=notin)
 	uniquepics=[]
 	for p in pictures:
 		if p not in uniquepics:

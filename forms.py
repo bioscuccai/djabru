@@ -11,7 +11,7 @@ class AddTagForm(forms.Form):
 	text=forms.CharField(validators=[RegexValidator(r'^[a-zA-Z0-9]*$')])
 
 class SidebarSearch(forms.Form):
-	text=forms.CharField(validators=[RegexValidator(r'^[a-zA-Z0-9\ ]*$')])
+	text=forms.CharField(validators=[RegexValidator(r'^[\-a-zA-Z0-9\ ]*$')])
 
 class EditTagForm(forms.ModelForm):
 	class Meta:
