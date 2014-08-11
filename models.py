@@ -2,6 +2,7 @@
 
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models import Sum
 
 # Create your models here.
 
@@ -25,6 +26,22 @@ class Picture(models.Model):
 
 	def __unicode__(self):
 		return str(self.pk)+" / "+self.filename
+	
+	def has_user_voted(self, user):
+		return ImageScore.objects.filter(user=user).filter(picture=self).count()==1
+	
+	def vote(self, user, score):
+		if not self.has_user_voted(user):
+			score=ImageScore(user=user, score=score, picture=self)
+			score.save()
+	
+	def score(self):
+		s=ImageScore.objects.filter(picture=self).aggregate(Sum("score"))['score__sum']
+		if s is None:
+			return 0
+		else:
+			return s
+		
 	class Meta:
 		ordering=["-added"]
 
@@ -35,3 +52,8 @@ class Comment(models.Model):
 	added=models.DateTimeField(auto_now=True)
 	class Meta:
 		ordering=["added"]
+
+class ImageScore(models.Model):
+	score=models.IntegerField()
+	picture=models.ForeignKey(Picture)
+	user=models.ForeignKey(User)

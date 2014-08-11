@@ -21,7 +21,8 @@ urlpatterns=patterns('',
 #	url(r'^registerpage/$', views.registerpage, name="registerpage"),
 	url(r'^addcomment/(?P<pic>\d+)/$', views.addcomment, name="bru_addcomment"),
 #	url(r'^bytag/(?P<page>\d+)/(?P<tags>[a-zA-Z0-9\ ]*)/$', views.bytag, name="bru_bytag_pagefirst"),
-
+	url(r'^score_plus/(?P<pic>\d+)/$', views.score_plus, name="bru_score_plus"),
+	url(r'^score_minus/(?P<pic>\d+)/$', views.score_minus, name="bru_score_minus"),
 
 	url(r'ajax_tags/(?P<pic>\d+)/$', views.ajax_tags, name="bru_ajax_tags"),
 	url(r'ajax_comments/(?P<pic>\d+)/$', views.ajax_comments, name="bru_ajax_comments"),

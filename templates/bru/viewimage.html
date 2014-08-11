@@ -54,6 +54,17 @@
 		</form>
 	</div>
 	<div id="tart"></div>
+	<div id="score">
+	Score: <span id="score_point">{{ pic.score }}</span>
+	{% if user.is_authenticated %}
+		{% if has_voted %}
+			voted
+		{% else %}
+			<a href="{% url 'bru_score_plus' pic.pk %}" class="score_link">+</a> /
+			<a href="{% url 'bru_score_minus' pic.pk %}" class="score_link">-</a> <br>
+		{% endif %}
+	{% endif %}
+	</div>
 {% endblock %}
 
 {% block js %}
@@ -138,6 +149,19 @@
 		removeaddr=removeaddr.replace("EZTCSERELD_", tag);
 		$.get(removeaddr, function(result){});
 		rereadTags();
+		return false;
+	});
+	
+	$(".score_link").click(function(e){
+		e.preventDefault();
+		var oldScore=parseInt($("#score_point").text());
+		if($(this).text()=="+"){
+			$("#score_point").text(oldScore+1);
+			$.get("{% url 'bru_score_plus' pic.pk %}", function(result){});
+		} else {
+			$("#score_point").text(oldScore-1);
+			$.get("{% url 'bru_score_minus' pic.pk %}", function(result){});
+		}
 		return false;
 	});
 	</script>

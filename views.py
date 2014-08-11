@@ -10,6 +10,7 @@ from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.core import serializers
 from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import get_object_or_404
 
 from bru.models import PicTag, Picture, Comment
 from bru.forms import UploadImageForm, AddTagForm, SidebarSearch, EditTagForm, CommentForm
@@ -74,7 +75,10 @@ def viewimage(request, image):
 	taglist=pic.tags.all()
 	form=CommentForm()
 	comments=Comment.objects.filter(picture=pic)
-	return render(request, 'bru/viewimage.html', {'pic':pic, 'tagform':tagform, 'tags':taglist, 'form':form, 'comments':comments})
+	has_voted=False
+	if request.user.is_authenticated():
+		has_voted=pic.has_user_voted(request.user)
+	return render(request, 'bru/viewimage.html', {'pic':pic, 'tagform':tagform, 'tags':taglist, 'form':form, 'comments':comments, 'has_voted':has_voted})
 
 @csrf_exempt
 @login_required
@@ -191,6 +195,22 @@ def addcomment(request, pic):
 			picobj=Picture.objects.get(pk=pic)
 			comment=Comment(text=form.cleaned_data['text'], user=request.user, picture=picobj)
 			comment.save()
+	return redirect("bru_viewimage", image=pic)
+
+@csrf_exempt
+@login_required
+def score_plus(request, pic):
+	p=get_object_or_404(Picture, pk=pic)
+	if request.user.is_authenticated() and not p.has_user_voted(request.user):
+		p.vote(request.user, 1)
+	return redirect("bru_viewimage", image=pic)
+
+@csrf_exempt
+@login_required
+def score_minus(request, pic):
+	p=get_object_or_404(Picture, pk=pic)
+	if request.user.is_authenticated() and not p.has_user_voted(request.user):
+		p.vote(request.user, -1)
 	return redirect("bru_viewimage", image=pic)
 
 #kephez tartozo tag-ek
